@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 //Packages
-import 'package:flickd_app/models/main_page_data.dart';
+//import 'package:flickd_app/models/main_page_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,14 +15,18 @@ import '../models/movie.dart';
 //Controllers
 import '../controllers/main_page_data_controller.dart';
 
-final mainPageDataControllerProvider =
-    StateNotifierProvider<MainPageDataController, MainPageData>((ref) {
-  return MainPageDataController();
-});
+// final mainPageDataControllerProvider =
+//     StateNotifierProvider<MainPageDataController, MainPageData>((ref) {
+//   return MainPageDataController();
+// });
+
+final mainPageDataControllerProvider = StateNotifierProvider(
+      (ref) => MainPageDataController(),
+);
 
 final selectedMoviePosterURLProvider = StateProvider<String?>((ref) {
-  final _movies = ref.watch(mainPageDataControllerProvider).movies!;
-  return _movies.length != 0 ? _movies[0].posterURL() : null;
+  final _movies = (ref.watch(mainPageDataControllerProvider.notifier).state as MainPageDataInitial).movies;
+  return _movies != null ? _movies[0].posterURL() : null;
 });
 
 class MainPage extends ConsumerWidget {
@@ -32,7 +36,7 @@ class MainPage extends ConsumerWidget {
   late var _selectedMoviePosterURL;
 
   late MainPageDataController _mainPageDataController;
-  late MainPageData _mainPageData;
+  late MainPageData _mainPageDataState;
 
   TextEditingController? _searchTextFieldController;
 
@@ -42,12 +46,13 @@ class MainPage extends ConsumerWidget {
     _deviceWidth = MediaQuery.of(context).size.width;
 
     _mainPageDataController = watch(mainPageDataControllerProvider.notifier);
-    _mainPageData = watch(mainPageDataControllerProvider);
+    _mainPageDataState = watch(mainPageDataControllerProvider.notifier).state;
+
     _selectedMoviePosterURL = watch(selectedMoviePosterURLProvider);
 
     _searchTextFieldController = TextEditingController();
 
-    _searchTextFieldController!.text = _mainPageData.searchText!;
+    //_searchTextFieldController!.text = (_mainPageDataState as MainPageDataLoaded).searchText!;
 
     return _buildUI();
   }
@@ -164,7 +169,7 @@ class MainPage extends ConsumerWidget {
   Widget _categorySelectionWidget() {
     return DropdownButton(
       dropdownColor: Colors.black38,
-      value: _mainPageData.searchCategory,
+      value: (_mainPageDataState is MainPageDataLoaded) ? (_mainPageDataState as MainPageDataLoaded).searchCategory : SearchCategory.popular,
       icon: Icon(
         Icons.menu,
         color: Colors.white24,
@@ -203,7 +208,7 @@ class MainPage extends ConsumerWidget {
   }
 
   Widget _moviesListViewWidget() {
-    final List<Movie> _movies = _mainPageData.movies!;
+    final List<Movie> _movies = (_mainPageDataState is MainPageDataLoaded) ? (_mainPageDataState as MainPageDataLoaded).movies! : [];
 
     if (_movies.length != 0) {
       return NotificationListener(
